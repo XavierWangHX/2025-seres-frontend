@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <title>赛力斯 - AI驱动情报枢纽</title>
+    <meta name="description" content="由Qwen-Max提供支持的研究助手">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="./static/seres.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="site/styles.css" />
+    <style>
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+        }
+
+        .agent-name {
+            text-align: center;
+        }
+
+        .agent-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .agent-choices {
+            display: none;
+        }
+
+        .btn-show {
+            display: none;
+        }
+
+        /* Icon button style for inline buttons */
+        .icon-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .icon-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Ensure buttons are properly aligned in headings */
+        h2 .icon-button, h2 .expand-button {
+            vertical-align: middle;
+            font-size: 0.8em;
+        }
+        
+        /* New navigation buttons in the top-right corner */
+        .nav-buttons {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        /* 左侧隐藏面板样式 */
+        .left-panel-container {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+        }
+        
+        .left-toggle-btn {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1001;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .left-toggle-btn:hover {
+            background: #34495e;
+        }
+        
+        .left-panel {
+            position: relative;
+            width: 0;
+            height: 70vh;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            transform: translateX(-100%);
+        }
+        
+        .left-panel.active {
+            width: 250px;
+            transform: translateX(0);
+        }
+        
+        .left-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .left-panel-header h3, 
+        .left-panel-header h4 {
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        .left-panel-content {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .left-panel-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .left-panel-menu li {
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            border-radius: 4px;
+        }
+        
+        .left-panel-menu li:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .left-panel-menu li i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 15px 0;
+        }
+        
+        .left-action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        
+        .left-action-btn:hover {
+            background: #f0f0f0;
+        }
+
+        /* 隐藏式面板样式 */
+        .history-panel-container {
+            position: fixed;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+        }
+        
+        .history-toggle-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px 0 0 4px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1001;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .history-toggle-btn:hover {
+            background: #34495e;
+        }
+        
+        .history-panel {
+            position: relative;
+            width: 0;
+            height: 70vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            transform: translateX(100%);
+        }
+        
+        .history-panel.active {
+            width: 350px;
+            transform: translateX(0);
+        }
+        
+        .history-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .history-panel-content {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .history-panel-search {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .history-panel-search input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .history-panel-search button {
+            border: 1px solid #ddd;
+            border-left: none;
+            background: #f8f9fa;
+            padding: 0 12px;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
+        
+        .history-panel-filters {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .history-panel-filters select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        
+        .history-panel-entries {
+            height: calc(100% - 100px);
+            overflow-y: auto;
+        }
+        
+        .history-action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        
+        .history-action-btn:hover {
+            background: #f0f0f0;
+        }
+
+        /* 滚动到底部按钮 */
+        .scroll-to-bottom {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .scroll-to-bottom:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    
+    <!-- 左侧隐藏式侧边栏 -->
+    <div class="left-panel-container">
+        <button id="leftPanelToggle" class="left-toggle-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="left-panel" id="leftPanel">
+            <div class="left-panel-header">
+                <h3>AI情报中枢</h3>
+                <button id="leftCloseBtn" class="left-action-btn" title="收起">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+            <div class="left-panel-content">
+                <ul class="left-panel-menu">
+                    <li data-page="home.html"><i class="fas fa-home"></i> 首页</li>
+                    <li data-page="data.html"><i class="fas fa-cube"></i> 竞品比对助手</li>
+                    <li data-page="comment.html"><i class="fas fa-comment-alt"></i> 舆情监察助手</li>
+                    <li data-page="index.html"><i class="fas fa-map-marked-alt"></i> 报告研究助手</li>
+                    <li><i class="fas fa-cog"></i> 系统设置</li>
+                </ul>
+            
+                <div class="divider"></div>
+            
+                <div class="left-panel-header">
+                    <h4>快速对比以下产品</h4>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏式历史面板 -->
+    <div class="history-panel-container">
+        <button id="historyPanelToggle" class="history-toggle-btn">
+            <i class="fas fa-history"></i>
+        </button>
+        
+        <div class="history-panel" id="historyPanel">
+            <div class="history-panel-header">
+                <h3>研究历史</h3>
+                <button id="historyCloseBtn" class="history-action-btn" title="收起">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="history-panel-content">
+                <div class="history-panel-search">
+                    <input type="text" id="historySearch" placeholder="搜索研究历史...">
+                    <button id="historySearchBtn" class="history-action-btn" title="搜索">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="history-panel-filters">
+                    <select id="historySortOrder">
+                        <option value="newest">最新优先</option>
+                        <option value="oldest">最早优先</option>
+                    </select>
+                    <button id="historyClearBtn" class="history-action-btn" title="清除所有历史记录">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                <div class="history-panel-entries" id="historyEntries">
+                    <!-- 条目将动态填充 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 滚动到底部按钮 -->
+    <div class="scroll-to-bottom" id="scrollToBottomBtn">
+        <i class="fas fa-arrow-down"></i>
+    </div>
+
+    <section class="landing">
+        <div class="max-w-5xl mx-auto text-center">
+            <h1 class="text-4xl font-extrabold mx-auto lg:text-7xl">
+                竞品数据助手<br>
+                <span
+                    style="background-image:linear-gradient(to right, #9867F0, #ED4E50); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">数小时的研究工作</span>
+            </h1>
+            <p class="max-w-6xl mx-auto text-gray-600 mt-8" style="font-size:20px">
+                欢迎使用<b>赛力斯竞品研究助手</b>，您的AI研究伙伴，提供快速洞察和全面数据研究。<br>
+                赛力斯研究助手负责从准确来源收集、组织研究成果到生成带引用的定制报告等一切工作。
+            </p>
+
+            <a href="#form" class="btn btn-primary">开始研究</a>
+        </div>
+    </section>
+
+    <main class="container" id="form">
+        <div class="agent-item"><img src="./static/seres.png" class="avatar" alt="自动代理"></div>
+        <form method="POST" class="mt-3" id="researchForm">
+            <div class="form-group">
+                <label for="task" class="agent-question">您希望我接下来研究什么？</label>
+                <textarea id="task" name="task" class="form-control highlight-connection" placeholder="输入任何主题、问题或想法..." required autocomplete="on"></textarea>
+                <input type="radio" name="agent" id="autoAgent" value="Auto Agent" checked hidden>
+            </div>
+            <div class="form-group">
+                <div class="row"></div>
+                <button type="button" id="btnShowAuto" class="btn btn-secondary mt-3 btn-show">自动代理</button>
+            </div>
+            <div class="form-group">
+                <label for="report_type" class="agent-question">您希望生成什么类型的报告？</label>
+                <select name="report_type" id="report_type" class="form-control highlight-connection" required>
+                    <option value="report1">竞品车型分析</option>
+                    <option value="report2">竞品车型分析</option>
+                    
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="tone" class="agent-question">您希望报告以什么语气生成？</label>
+                <select name="tone" id="tone" class="form-control highlight-connection" required>
+                    <option value="Objective">客观 - 公正无偏地呈现事实和发现</option>
+                    
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="report_source" class="agent-question">您希望我从哪些来源进行研究？</label>
+                
+                <select name="report_source" id="report_source" class="form-control highlight-connection" required>
+                    <option value="web">互联网</option>
+                    
+                </select>
+            </div>
+           
+            <input type="submit" value="开始研究" class="btn btn-primary button-padding" id="submitButton">
+        </form>
+
+        <!-- 在研究进度部分上方添加JSON按钮 -->
+        <div class="margin-div" id="jsonButtonContainer" style="display: none; text-align: right; margin-bottom: 10px;">
+            <a id="downloadLinkJsonTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-code"></i> JSON
+            </a>
+        </div>
+
+        <div class="margin-div research-output-container">
+            <h2><div id="modernSpinner" class="modern-spinner"></div> 研究进度 <button id="expandOutputBtn" class="expand-button" title="展开"><i class="fas fa-expand-alt"></i></button></h2>
+            <p class="mt-2 text-left" style="font-size: 0.8rem;">
+                实时观察AI如何收集信息并分析您的主题。</p>
+            <div id="output"></div>
+        </div>
+        <div class="images_div">
+            <div id="selectedImagesContainer" style="display: none;"></div>
+        </div>
+        <div class="margin-div report-container">
+            <h2>研究报告
+                <button id="copyToClipboardTop" class="icon-button" title="复制" style="display: none;">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button id="expandReportBtn" class="expand-button" title="展开">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+            </h2>
+            <div class="report-actions" style="display: none;">
+                <a id="downloadLinkTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
+                <a id="downloadLinkWordTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-word"></i> Word
+                </a>
+                <a id="downloadLinkMdTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-lines"></i> Markdown
+                </a>
+            </div>
+            <div id="reportContainer"></div>
+            <div id="reportActions" style="display: none;">
+                <div class="alert alert-info" role="alert" id="status"></div>
+            </div>
+        </div>
+
+        <!-- 聊天容器 -->
+        <div class="margin-div chat-container" id="chatContainer" style="display: none;">
+            <h2><i class="fas fa-comments"></i> 与AI讨论此研究 <button id="expandChatBtn" class="expand-button" title="展开"><i class="fas fa-expand-alt"></i></button></h2>
+            <p class="text-muted">提出问题以获取更多研究见解</p>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-container">
+                <textarea id="chatInput" class="form-control chat-input" placeholder="询问关于此研究的问题..." rows="2"></textarea>
+                <button id="voiceInputBtn" class="btn btn-secondary" title="使用语音输入">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button id="sendChatBtn" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> 发送
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 固定下载栏 -->
+    <div class="sticky-downloads-bar" id="stickyDownloadsBar" style="display: none;">
+        <div class="download-buttons-container">
+            <a id="copyToClipboard" class="download-option-btn disabled">
+                <i class="fas fa-copy"></i> 复制(Markdown)
+            </a>
+            <a id="downloadLinkMd" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-lines"></i> Markdown
+            </a>
+            <a id="downloadLink" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
+            <a id="downloadLinkWord" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-word"></i> Word
+            </a>
+            <a id="downloadLinkJson" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-code"></i> 日志(JSON)
+            </a>
+        </div>
+    </div>
+
+    <footer>
+        <p>赛力斯研究助手 &copy; 2025</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+    <script src="site/scripts_data.js"></script>
+    <script>
+        // 随着内容增长自动调整文本区域大小
+        const taskTextarea = document.getElementById('task');
+        if (taskTextarea) {
+            // 设置初始高度
+            taskTextarea.setAttribute('style', 'height: 38px; overflow-y: hidden;');
+
+            // 根据内容调整文本区域大小的函数
+            const resizeTextarea = () => {
+                taskTextarea.style.height = 'auto';
+                taskTextarea.style.height = taskTextarea.scrollHeight + 'px';
+            };
+
+            // 为输入和焦点添加事件监听器
+            taskTextarea.addEventListener('input', resizeTextarea);
+            taskTextarea.addEventListener('focus', resizeTextarea);
+        }
+
+        // 滚动到底部按钮功能
+        const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+        // 处理滚动事件
+        window.addEventListener('scroll', function() {
+            // 如果需要，可以在此处添加其他滚动功能
+        });
+
+        // 滚动到底部按钮点击事件
+        scrollToBottomBtn.addEventListener('click', function() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        });
+
+        // 确保在窗口调整大小时功能面板正确定位
+        window.addEventListener('resize', function () {
+            // 根据屏幕大小调整功能面板宽度
+            const viewportWidth = window.innerWidth;
+            const featurePanel = document.querySelector('.feature-panel');
+
+            if (featurePanel) {
+                if (viewportWidth < 1400) {
+                    featurePanel.style.display = 'none';
+                } else {
+                    featurePanel.style.display = 'block';
+                    // 根据屏幕大小调整宽度
+                    const panelWidth = Math.min(280, Math.max(200, viewportWidth * 0.15));
+                    featurePanel.style.width = `${panelWidth}px`;
+                }
+            }
+        });
+
+        // 在加载时手动触发滚动事件一次，以正确设置滚动按钮可见性
+        window.addEventListener('DOMContentLoaded', function () {
+            setTimeout(() => {
+                window.dispatchEvent(new Event('scroll'));
+            }, 100);
+        });
+    </script>
+</body>
+</html>

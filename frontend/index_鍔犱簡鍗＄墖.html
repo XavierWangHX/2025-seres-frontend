@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <title>Seres 研究助手</title>
+    <meta name="description" content="由Qwen-Max提供支持的研究助手">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="./static/seres.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/site/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    
+    <style>
+        :root {
+            --transition-speed: 0.3s;
+            --scrollbar-width: 8px;
+            
+            /* 导览部分颜色方案 */
+            --nav-primary-color: #6a11cb; /* 深紫色 */
+            --nav-secondary-color: #ff5e62; /* 珊瑚红 */
+            --nav-accent-color: #00ff9d; /* 霓虹绿 */
+            --nav-text-color: #f5f7fa; /* 浅灰白 */
+            --nav-bg-color: #1a1a2e; /* 深蓝灰 */
+            --nav-card-bg: #2a2a40; /* 中蓝灰 */
+            --nav-border-glow: 0 0 10px rgba(106, 17, 203, 0.5);
+            
+            /* Main部分颜色方案 */
+            --main-primary-color: #00b4db; /* 天蓝色 */
+            --main-secondary-color: #0083b0; /* 深蓝色 */
+            --main-accent-color: #ff9500; /* 暖橙色 */
+            --main-text-color: #f3f4f6; /* 浅灰 */
+            --main-bg-color: #1a1a2e; /* 深蓝灰 */
+            --main-card-bg: #2a2a40; /* 中蓝灰 */
+            --main-border-glow: 0 0 10px rgba(0, 180, 219, 0.5);
+        }
+
+        body {
+            scroll-behavior: smooth;
+            background: var(--nav-bg-color);
+            font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: var(--nav-text-color);
+            line-height: 1.7;
+            position: relative;
+            padding-top: 60px;
+            overflow-x: hidden;
+        }
+
+        /* 导航栏 - 玻璃态效果 */
+        .navbar {
+            padding: 15px 0;
+            background: rgba(42, 42, 64, 0.8) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(106, 17, 203, 0.3);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--nav-text-color);
+            display: flex;
+            align-items: center;
+            text-shadow: 0 0 10px rgba(106, 17, 203, 0.5);
+        }
+
+        .navbar-brand img {
+            margin-right: 10px;
+            height: 40px;
+            filter: drop-shadow(0 0 5px rgba(106, 17, 203, 0.7));
+        }
+
+        .nav-link {
+            color: var(--nav-text-color) !important;
+            font-weight: 500;
+            padding: 10px 20px !important;
+            border-radius: 20px;
+            transition: all var(--transition-speed);
+            margin: 0 5px;
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--nav-accent-color);
+            transition: width var(--transition-speed);
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 60%;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white !important;
+            text-shadow: 0 0 10px var(--nav-accent-color);
+        }
+
+        /* 导览部分样式 */
+        .homepage {
+            background: var(--nav-bg-color);
+            padding: 4rem 0;
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .homepage-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .homepage-header img {
+            margin: 0 auto 20px;
+            display: block;
+            width: 180px;
+            height: auto;
+            transition: transform 0.5s ease;
+        }
+
+        .homepage-header img:hover {
+            transform: scale(1.05);
+        }
+
+        .homepage-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--nav-primary-color), var(--nav-secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(106, 17, 203, 0.2);
+        }
+
+        .homepage-header p {
+            font-size: 1.1rem;
+            color: #cbd5e1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            color: var(--nav-text-color);
+            font-weight: 700;
+            font-size: 2.2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--nav-primary-color), var(--nav-secondary-color));
+            border-radius: 4px;
+        }
+
+        .quick-access-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px auto;
+            max-width: 1200px;
+            padding: 0 20px;
+        }
+
+        .quick-access-card {
+            background: linear-gradient(135deg, rgba(42, 42, 64, 0.8), rgba(30, 30, 45, 0.8));
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all var(--transition-speed);
+            cursor: pointer;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(106, 17, 203, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .quick-access-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, var(--nav-primary-color), var(--nav-secondary-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .quick-access-card:hover::before {
+            opacity: 1;
+        }
+
+        .quick-access-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(106, 17, 203, 0.3);
+        }
+
+        .quick-access-card i {
+            font-size: 2.8rem;
+            margin-bottom: 25px;
+            background: linear-gradient(to right, var(--nav-primary-color), var(--nav-secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: transform 0.5s ease;
+        }
+
+        .quick-access-card:hover i {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .quick-access-card h3 {
+            color: var(--nav-text-color);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .quick-access-card p {
+            color: #cbd5e1;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        /* 平滑滚动到研究部分的指示器 */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .scroll-indicator:hover {
+            opacity: 1;
+        }
+
+        .scroll-indicator i {
+            font-size: 2rem;
+            color: var(--nav-accent-color);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0) translateX(-50%);
+            }
+            40% {
+                transform: translateY(-20px) translateX(-50%);
+            }
+            60% {
+                transform: translateY(-10px) translateX(-50%);
+            }
+        }
+
+        /* Main部分容器样式 */
+        main.container {
+            padding: 50px;
+            background: linear-gradient(135deg, rgba(42, 42, 64, 0.8), rgba(30, 30, 45, 0.8));
+            backdrop-filter: blur(15px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            border-radius: 24px;
+            margin: 100px auto;
+            border: 1px solid rgba(0, 180, 219, 0.2);
+            transition: all var(--transition-speed);
+            max-width: 1300px;
+            position: relative;
+        }
+
+        main.container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, var(--main-primary-color), var(--main-secondary-color));
+            z-index: -1;
+            border-radius: 24px;
+            opacity: 0;
+            transition: opacity var(--transition-speed);
+        }
+
+        main.container:hover::before {
+            opacity: 1;
+        }
+
+        /* Main部分输入框样式 */
+        main input, main select, main textarea, main #output, main #reportContainer {
+            background: rgba(42, 42, 64, 0.8);
+            border: 1px solid rgba(0, 180, 219, 0.3);
+            color: var(--main-text-color);
+            transition: all var(--transition-speed);
+            border-radius: 12px;
+            padding: 16px 24px;
+            font-size: 1.05rem;
+            width: 100%;
+            backdrop-filter: blur(5px);
+        }
+
+        main input:hover, main input:focus, 
+        main select:hover, main select:focus,
+        main textarea:hover, main textarea:focus {
+            border-color: var(--main-accent-color);
+            box-shadow: 0 0 20px rgba(255, 149, 0, 0.3);
+            outline: none;
+            transform: translateY(-2px);
+        }
+
+        /* Main部分按钮样式 */
+        main .btn-primary {
+            background: linear-gradient(45deg, var(--main-primary-color), var(--main-secondary-color));
+            border: none;
+            transition: all var(--transition-speed);
+            font-size: 1.2rem;
+            padding: 16px 40px;
+            border-radius: 50px;
+            min-width: 220px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 180, 219, 0.5);
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            position: relative;
+            overflow: hidden;
+            color: white;
+            z-index: 1;
+            transform: translateY(0);
+        }
+
+        main .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--main-secondary-color), var(--main-primary-color));
+            opacity: 0;
+            transition: opacity var(--transition-speed);
+            z-index: -1;
+        }
+
+        main .btn-primary:hover::before {
+            opacity: 1;
+        }
+
+        main .btn-primary:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 40px rgba(0, 180, 219, 0.7);
+            text-shadow: 0 0 10px white;
+        }
+
+        main .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 0 20px rgba(0, 180, 219, 0.5);
+        }
+
+        /* Main部分标题样式 */
+        main .research-output-container h2, 
+        main .report-container h2,
+        main .chat-container h2 {
+            color: var(--main-text-color);
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        main .research-output-container h2::after, 
+        main .report-container h2::after,
+        main .chat-container h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--main-primary-color), var(--main-secondary-color));
+            border-radius: 4px;
+        }
+
+        /* 滚动容器样式 */
+        .scrollable-container {
+            position: relative;
+            border-radius: 16px;
+            margin-top: 20px;
+            background: rgba(30, 30, 45, 0.5);
+            border: 1px solid rgba(0, 180, 219, 0.1);
+            transition: all var(--transition-speed);
+        }
+
+        .scrollable-container:hover {
+            border-color: rgba(0, 180, 219, 0.3);
+        }
+
+        /* 自定义滚动条 */
+        .scrollable-container::-webkit-scrollbar {
+            width: var(--scrollbar-width);
+        }
+
+        .scrollable-container::-webkit-scrollbar-track {
+            background: rgba(30, 30, 45, 0.8);
+            border-radius: 10px;
+        }
+
+        .scrollable-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, var(--main-primary-color), var(--main-secondary-color));
+            border-radius: 10px;
+            opacity: 0.7;
+            transition: opacity var(--transition-speed);
+        }
+
+        .scrollable-container::-webkit-scrollbar-thumb:hover {
+            opacity: 1;
+        }
+
+        /* 数据网格效果 */
+        .tech-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(106, 17, 203, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(106, 17, 203, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 992px) {
+            .homepage-header h1 {
+                font-size: 2rem;
+            }
+            
+            .homepage-header p {
+                font-size: 1rem;
+            }
+            
+            .quick-access-grid {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+                gap: 20px;
+            }
+            
+            .quick-access-card {
+                padding: 30px 20px;
+            }
+            
+            .quick-access-card i {
+                font-size: 2.2rem;
+            }
+            
+            .quick-access-card h3 {
+                font-size: 1.3rem;
+            }
+            
+            main.container {
+                padding: 30px;
+                margin: 60px auto;
+            }
+            
+            main .btn-primary {
+                padding: 14px 30px;
+                min-width: 180px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            html, body {
+                padding-top: 70px;
+            }
+            
+            .container {
+                padding: 20px;
+                margin: 30px auto;
+            }
+            
+            .nav-link {
+                padding: 8px 15px !important;
+                margin: 5px 0;
+            }
+            
+            .nav-buttons {
+                top: 15px;
+                right: 15px;
+            }
+            
+            .top-history-button, 
+            .top-websocket-button {
+                min-width: auto;
+                padding: 8px 12px;
+                font-size: 0;
+            }
+            
+            .top-history-button i, 
+            .top-websocket-button i {
+                margin-right: 0;
+                font-size: 1.2rem;
+            }
+            
+            .scroll-to-bottom {
+                width: 50px;
+                height: 50px;
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            main .research-output-container h2, 
+            main .report-container h2,
+            main .chat-container h2 {
+                font-size: 1.6rem;
+            }
+            
+            .scrollable-container {
+                max-height: 350px;
+            }
+        }
+
+        /* 历史面板 */
+        .history-panel {
+            position: fixed;
+            right: -380px;
+            top: 0;
+            width: 380px;
+            height: 100vh;
+            background-color: rgba(42, 42, 64, 0.95);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+            transition: right 0.5s cubic-bezier(0.77, 0.2, 0.05, 1.0);
+            z-index: 1000;
+            padding: 2rem;
+            overflow-y: auto;
+            border-left: 1px solid rgba(106, 17, 203, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .history-panel.active {
+            right: 0;
+        }
+
+        /* Markdown内容样式 */
+        #reportContainer h1, 
+        #reportContainer h2, 
+        #reportContainer h3 {
+            color: var(--main-text-color);
+            margin-top: 2rem;
+            margin-bottom: 1.2rem;
+            font-weight: 600;
+        }
+
+        #reportContainer h1 {
+            font-size: 1.8rem;
+            border-bottom: 1px solid rgba(0, 180, 219, 0.2);
+            padding-bottom: 0.5rem;
+        }
+
+        #reportContainer h2 {
+            font-size: 1.5rem;
+        }
+
+        #reportContainer h3 {
+            font-size: 1.3rem;
+        }
+
+        #reportContainer p {
+            margin-bottom: 1.2rem;
+            color: #e2e8f0;
+            line-height: 1.8;
+        }
+
+        #reportContainer a {
+            color: var(--main-primary-color);
+            text-decoration: none;
+            transition: all 0.3s;
+            position: relative;
+            display: inline-block;
+        }
+
+        #reportContainer a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: var(--main-accent-color);
+            transition: width 0.3s;
+        }
+
+        #reportContainer a:hover {
+            color: var(--main-accent-color);
+        }
+
+        #reportContainer a:hover::after {
+            width: 100%;
+        }
+
+        #reportContainer pre {
+            background-color: rgba(30, 30, 45, 0.8);
+            padding: 1.5rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            color: #e2e8f0;
+            border: 1px solid rgba(0, 180, 219, 0.2);
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        #reportContainer blockquote {
+            border-left: 4px solid var(--main-secondary-color);
+            padding-left: 1.5rem;
+            margin-left: 0;
+            color: #94a3b8;
+            background-color: rgba(0, 131, 176, 0.05);
+            font-style: italic;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        #reportContainer table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        #reportContainer th, 
+        #reportContainer td {
+            border: 1px solid rgba(0, 180, 219, 0.2);
+            padding: 12px;
+            text-align: left;
+            color: #e2e8f0;
+        }
+
+        #reportContainer th {
+            background-color: rgba(0, 180, 219, 0.1);
+            font-weight: 600;
+        }
+
+        #reportContainer tr:hover {
+            background-color: rgba(0, 180, 219, 0.05);
+        }
+
+        /* 聊天容器 */
+        .chat-messages {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: rgba(30, 30, 45, 0.7);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 180, 219, 0.1);
+        }
+
+        .chat-message {
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            border-radius: 16px;
+            position: relative;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease-out;
+        }
+
+        .chat-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .chat-message.user {
+            background: linear-gradient(135deg, rgba(0, 131, 176, 0.1), rgba(0, 131, 176, 0.05));
+            border: 1px solid rgba(0, 131, 176, 0.2);
+            text-align: right;
+            margin-left: 20%;
+        }
+
+        .chat-message.ai {
+            background: linear-gradient(135deg, rgba(0, 180, 219, 0.1), rgba(0, 180, 219, 0.05));
+            border: 1px solid rgba(0, 180, 219, 0.2);
+            margin-right: 20%;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+        }
+
+        /* 展开按钮样式 */
+        .expand-button {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 15px;
+            transition: all 0.3s;
+            padding: 0;
+            font-size: 1.2rem;
+        }
+
+        .expand-button:hover {
+            color: rgba(255, 255, 255, 0.8);
+            transform: scale(1.1);
+        }
+
+        /* 微调器样式 */
+        .modern-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            margin-right: 15px;
+            border: 3px solid rgba(0, 180, 219, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--main-primary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 加载状态样式 */
+        .loading-placeholder {
+            position: relative;
+            overflow: hidden;
+            background-color: rgba(30, 30, 45, 0.5);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            height: 20px;
+        }
+
+        .loading-placeholder::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, 
+                rgba(30, 30, 45, 0.5), 
+                rgba(42, 42, 64, 0.8), 
+                rgba(30, 30, 45, 0.5));
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        /* 报告容器样式 */
+        #reportContainer {
+            min-height: 300px;
+            max-height: 700px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            padding: 40px;
+            line-height: 1.8;
+            position: relative;
+        }
+
+        /* A4纸样式 */
+        .a4-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20mm;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        /* 报告下载按钮样式 */
+        .report-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(42, 42, 64, 0.8);
+            border: 1px solid rgba(0, 180, 219, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            padding: 8px 15px;
+            margin-left: 10px;
+            text-decoration: none;
+            transition: all var(--transition-speed);
+            font-size: 0.9rem;
+        }
+
+        .report-action-btn:hover {
+            background: rgba(0, 180, 219, 0.2);
+            border-color: rgba(0, 180, 219, 0.4);
+            color: white;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+
+        .report-action-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* 全屏模态框样式 */
+        .fullscreen-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            display: none;
+            overflow-y: auto;
+        }
+
+        .fullscreen-content {
+            padding: 50px;
+            max-width: 1200px;
+            margin: 0 auto;
+            color: white;
+        }
+
+        .close-fullscreen {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            z-index: 2001;
+            transition: all var(--transition-speed);
+        }
+
+        .close-fullscreen:hover {
+            color: var(--main-accent-color);
+            transform: scale(1.1);
+        }
+
+        /* 左侧导航面板样式 */
+        .nav-panel-container {
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-toggle-btn {
+            position: fixed;
+            left: 0;
+            top: 20px;
+            background: rgba(42, 42, 64, 0.8);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 1001;
+        }
+
+        .nav-toggle-btn:hover {
+            background: rgba(106, 17, 203, 0.8);
+        }
+
+        .nav-panel {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: rgba(42, 42, 64, 0.95);
+            transition: left 0.3s;
+            z-index: 1000;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-panel.active {
+            left: 0;
+        }
+
+        .nav-panel-header {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(106, 17, 203, 0.3);
+        }
+
+        .nav-panel-header h3 {
+            color: white;
+            margin: 0;
+        }
+
+        .vehicle-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .vehicle-item {
+            padding: 10px;
+            background: rgba(106, 17, 203, 0.1);
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .vehicle-item:hover {
+            background: rgba(106, 17, 203, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .selection-hint {
+            margin-bottom: 15px;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+
+        /* 快捷车型卡片样式 */
+        .quick-vehicles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .vehicle-card, .vehicle-card1 {
+            padding: 10px 15px;
+            background: rgba(106, 17, 203, 0.1);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .vehicle-card:hover, .vehicle-card1:hover {
+            background: rgba(106, 17, 203, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .vehicle-card.selected, .vehicle-card1.selected {
+            background: rgba(106, 17, 203, 0.5);
+            box-shadow: 0 0 10px rgba(106, 17, 203, 0.5);
+        }
+
+        /* WebSocket状态面板 */
+        .websocket-panel {
+            position: fixed;
+            right: -380px;
+            top: 0;
+            width: 380px;
+            height: 100vh;
+            background: rgba(42, 42, 64, 0.95);
+            transition: right 0.3s;
+            z-index: 1000;
+            padding: 20px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .websocket-panel.active {
+            right: 0;
+        }
+
+        .websocket-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 180, 219, 0.3);
+        }
+
+        .websocket-panel-header h3 {
+            color: white;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-label {
+            color: #cbd5e1;
+        }
+
+        .status-value {
+            color: white;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-indicator.connected {
+            background-color: #00ff9d;
+            box-shadow: 0 0 10px #00ff9d;
+        }
+
+        .status-indicator.disconnected {
+            background-color: #ff5e62;
+            box-shadow: 0 0 10px #ff5e62;
+        }
+
+        .status-divider {
+            height: 1px;
+            background: rgba(0, 180, 219, 0.2);
+            margin: 15px 0;
+        }
+
+        /* 粘性下载栏 */
+        .sticky-downloads-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(42, 42, 64, 0.95);
+            padding: 15px;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 999;
+            backdrop-filter: blur(10px);
+        }
+
+        .download-buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .download-option-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(106, 17, 203, 0.2);
+            border-radius: 50px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+            border: 1px solid rgba(106, 17, 203, 0.3);
+        }
+
+        .download-option-btn:hover {
+            background: rgba(106, 17, 203, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(106, 17, 203, 0.3);
+        }
+
+        .download-option-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* 滚动到底部按钮 */
+        .scroll-to-bottom {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: rgba(106, 17, 203, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 998;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .scroll-to-bottom:hover {
+            background: rgba(106, 17, 203, 1);
+            transform: translateY(-5px);
+        }
+
+        .scroll-to-bottom i {
+            color: white;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 数据网格背景 -->
+    <div class="tech-grid"></div>
+    
+    <!-- 隐藏式左侧导航栏 -->
+    <div class="nav-panel-container">
+        <button id="navPanelToggle" class="nav-toggle-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="nav-panel" id="navPanel">
+            <div class="nav-panel-header">
+                <h3>快速选择舆情方向</h3>
+            </div>
+            <div class="nav-panel-content">
+                <div class="selection-hint" id="selectionHint">请选择查看舆情的车型</div>
+                <div class="vehicle-grid">
+                    <div class="vehicle-item" data-vehicle="问界M7">问界M7</div>
+                    <div class="vehicle-item" data-vehicle="问界M9">问界M9</div>
+                    <div class="vehicle-item" data-vehicle="问界M5">问界M5</div>
+                    <div class="vehicle-item" data-vehicle="小米SU7">小米SU7</div>
+                    <div class="vehicle-item" data-vehicle="理想L9">理想L9</div>
+                    <div class="vehicle-item" data-vehicle="蔚来ET7">蔚来ET7</div>
+                    <div class="vehicle-item" data-vehicle="特斯拉Model Y">Model Y</div>
+                    <div class="vehicle-item" data-vehicle="比亚迪汉">比亚迪汉</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Buttons (moved from top bar) -->
+    <div class="nav-buttons">
+        <div id="historyPanelOpenBtn" class="top-history-button">
+            <i class="fas fa-history"></i> 历史
+        </div>
+        <div id="websocketPanelOpenBtn" class="top-websocket-button">
+            <i class="fas fa-network-wired"></i> 状态
+        </div>
+    </div>
+
+    <!-- WebSocket Status Panel -->
+    <div class="websocket-panel" id="websocketPanel">
+        <div class="websocket-panel-header">
+            <h3><i class="fas fa-plug"></i> 连接状态</h3>
+            <div class="websocket-panel-actions">
+                <button id="websocketPanelToggle" class="websocket-action-btn" title="关闭面板">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+        </div>
+        <div class="websocket-status">
+            <div class="status-item">
+                <span class="status-label">连接状态:</span>
+                <span class="status-value" id="connectionStatus">已断开</span>
+                <span class="status-indicator" id="connectionIndicator"></span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">研究状态:</span>
+                <span class="status-value" id="researchStatus">未激活</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">连接时长:</span>
+                <span class="status-value" id="connectionDuration">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">最后活动:</span>
+                <span class="status-value" id="lastActivity">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">准备状态:</span>
+                <span class="status-value" id="readyState">-</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-item">
+                <span class="status-label">连接尝试:</span>
+                <span class="status-value" id="connectionAttempts">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">接收消息:</span>
+                <span class="status-value" id="messagesReceived">0</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-item">
+                <span class="status-label">当前任务:</span>
+                <span class="status-value" id="currentTask">-</span>
+            </div>
+        </div>
+    </div>
+
+    <section class="landing">
+        <div class="max-w-5xl mx-auto text-center">
+            <h1 class="text-4xl font-extrabold mx-auto lg:text-7xl">
+                赛力斯 <br>
+                <span
+                    style="background-image:linear-gradient(to right, #9867F0, #ED4E50); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI驱动情报枢纽
+                    </span>
+            </h1>
+            <p class="max-w-6xl mx-auto text-gray-600 mt-8" style="font-size:20px">
+                欢迎<b>使用赛力斯舆情助手</b>, 你的AI舆情研究最佳助手. <br>
+                点击下方开始按钮即可以选择感兴趣话题进行助手研究
+            </p>
+            <a href="#form" class="btn btn-primary">开始研究</a>
+        </div>
+    </section>
+    
+    <div class="quick-access-grid">
+        <div class="quick-access-card" data-target="index.html">
+            <i class="fas fa-search"></i>
+            <h3>报告研究助手</h3>
+            <p>自动获取数据高效分析研究</p>
+        </div>
+        
+        <div class="quick-access-card" data-target="data.html">
+            <i class="fas fa-chart-line"></i>
+            <h3>数据研究助手</h3>
+            <p>了解数据分析和调研领域的最新趋势</p>
+        </div>
+        
+        <div class="quick-access-card" data-target="comment.html">
+            <i class="fas fa-comments"></i>
+            <h3>舆情关注助手</h3>
+            <p>实时监测和分析行业舆情动态</p>
+        </div>
+        
+        <div class="quick-access-card" data-target="none.html">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <h3>财报分析助手</h3>
+            <p>深度解析企业财务报告数据</p>
+        </div>
+        
+        <div class="quick-access-card" data-target="data.html">
+            <i class="fas fa-chess"></i>
+            <h3>竞品监测助手</h3>
+            <p>实时跟踪竞争对手动态</p>
+        </div>
+        
+        <div class="quick-access-card" data-target="a.html">
+            <i class="fas fa-newspaper"></i>
+            <h3>AI读报助手</h3>
+            <p>智能摘要文档内容</p>
+        </div>
+    </div>
+
+    <!-- Scroll to bottom button -->
+    <div class="scroll-to-bottom" id="scrollToBottomBtn">
+        <i class="fas fa-arrow-down"></i>
+    </div>
+
+    <main class="container main-content" id="form">
+        <!-- 添加快捷车型方块 -->
+        <div class="quick-vehicles">
+            <div class="vehicle-card1" data-vehicle="问界M5">
+                <i class="fas fa-car"></i>
+                <span>问界M5</span>
+            </div>
+            <div class="vehicle-card1" data-vehicle="问界M7">
+                <i class="fas fa-car"></i>
+                <span>问界M7</span>
+            </div>
+            <div class="vehicle-card1" data-vehicle="问界M9">
+                <i class="fas fa-car"></i>
+                <span>问界M9</span>
+            </div>
+            <div class="vehicle-card1" data-vehicle="问界M8">
+                <i class="fas fa-car"></i>
+                <span>问界M8</span>
+            </div>
+            <div class="vehicle-card" data-vehicle="乐道L90">
+                <i class="fas fa-car"></i>
+                <span>乐道L90</span>
+            </div>
+            <div class="vehicle-card" data-vehicle="宝马iX3">
+                <i class="fas fa-car"></i>
+                <span>宝马iX3</span>
+            </div>
+            <div class="vehicle-card" data-vehicle="奥迪Q4 e-tron">
+                <i class="fas fa-car"></i>
+                <span>奥迪Q4 e-tron</span>
+            </div>
+            
+            <div class="vehicle-card" data-vehicle="蔚来EC7">
+                <i class="fas fa-car"></i>
+                <span>蔚来EC7</span>
+            </div>
+            
+            <div class="vehicle-card" data-vehicle="蔚来Es8">
+                <i class="fas fa-car"></i>
+                <span>蔚来Es8</span>
+            </div>
+            <div class="vehicle-card" data-vehicle="红旗HQ9 PHEV">
+                <i class="fas fa-car"></i>
+                <span>红旗HQ9 PHEV</span>
+            </div>
+        
+            
+            <div class="vehicle-card" data-vehicle="蔚来Es7">
+                <i class="fas fa-car"></i>
+                <span>蔚来Es7</span>
+            </div>
+            
+            <div class="vehicle-card" data-vehicle="小米SU7">
+                <i class="fas fa-car"></i>
+                <span>小米SU7</span>
+            </div>
+            <div class="vehicle-card" data-vehicle="理想L9">
+                <i class="fas fa-car"></i>
+                <span>理想L9</span>
+            </div>
+        </div>
+
+        
+        <form method="POST" class="mt-3" id="researchForm">
+            <div class="form-group">
+                <label for="task" class="agent-question">你想研究的车型是?</label>
+                <textarea id="task" name="task" class="form-control highlight-connection" placeholder="输入任何主题、问题或想法..." required autocomplete="on"></textarea>
+                <input type="radio" name="agent" id="autoAgent" value="Auto Agent" checked hidden>
+            </div>
+            <div class="form-group">
+                <div class="row"></div>
+                <button type="button" id="btnShowAuto" class="btn btn-secondary mt-3 btn-show">Auto Agent</button>
+            </div>
+            <div class="form-group">
+                <label for="report_type" class="agent-question">报告类型</label>
+                <select name="report_type" id="report_type" class="form-control highlight-connection" required>
+                    <option value="research_report">摘要 - 简短快速 (~2分钟)</option>
+                    <option value="detailed_report">详细 - 深入且较长 (~5分钟)</option>
+                    <option value="deep">深度研究</option>
+                    <option value="custom_report1">竞品车型分析</option>
+                    <option value="custom_report2">舆情分析</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="tone" class="agent-question">你需要哪种语气报告?</label>
+                <select name="tone" id="tone" class="form-control highlight-connection" required>
+                    <option value="Objective">客观 - 公正无偏见地呈现事实和发现</option>
+                    <option value="Formal">正式 - 遵循学术标准，使用复杂的语言和结构</option>
+                    <option value="Analytical">分析性 - 对数据和理论进行批判性评估和详细检查</option>
+                    <option value="Persuasive">说服性 - 说服听众接受特定观点或论点</option>
+                    <option value="Informative">信息性 - 提供关于主题的清晰全面信息</option>
+                    <option value="Explanatory">解释性 - 澄清复杂概念和过程</option>
+                    <option value="Descriptive">描述性 - 详细描述现象、实验或案例研究</option>
+                    <option value="Critical">批判性 - 判断研究的有效性和相关性及其结论</option>
+                    <option value="Comparative">比较性 - 并列不同理论、数据或方法以突出异同</option>
+                    <option value="Speculative">推测性 - 探索假设和潜在影响或未来研究方向</option>
+                    <option value="Reflective">反思性 - 考虑研究过程和个人见解或经验</option>
+                    <option value="Narrative">叙述性 - 讲述故事以说明研究发现或方法</option>
+                    <option value="Humorous">幽默 - 轻松愉快，通常使内容更相关</option>
+                    <option value="Optimistic">乐观 - 突出积极发现和潜在好处</option>
+                    <option value="Pessimistic">悲观 - 关注限制、挑战或负面结果</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="report_source" class="agent-question">数据来源?</label>
+                <p class="text-left mt-0 pt-0" style="font-size: 0.7rem;">你可以选择任何结构风格.</p>
+                <select name="report_source" id="report_source" class="form-control highlight-connection" required>
+                    <option value="web">网络爬取</option>
+                    <option value="local">本地</option>
+                    <option value="hybrid">混合</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="queryDomains" class="form-label">可选网站</label>
+                <input type="text" class="form-control highlight-connection" id="queryDomains" name="query_domains" placeholder="输入域名，用逗号分隔" autocomplete="on">
+                <small class="text-muted">比如：techcrunch.com, forbes.com</small>
+            </div>
+            <input type="submit" value="开始研究" class="btn btn-primary button-padding" id="submitButton">
+        </form>
+
+        <!-- Add JSON button above Research Progress section -->
+        <div class="margin-div" id="jsonButtonContainer" style="display: none; text-align: right; margin-bottom: 10px;">
+            <a id="downloadLinkJsonTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-code"></i> JSON
+            </a>
+        </div>
+
+        <div class="margin-div research-output-container">
+            <!-- Move spinner to the left side of the text -->
+            <h2><div id="modernSpinner" class="modern-spinner"></div> 研究进行中... <button id="expandOutputBtn" class="expand-button" title="展开"><i class="fas fa-expand-alt"></i></button></h2>
+            <p class="mt-2 text-left" style="font-size: 0.8rem;">
+                实时研究内容.</p>
+            <div class="scrollable-container">
+                <div id="output" class="research-output-content"></div>
+            </div>
+        </div>
+        <div class="images_div">
+            <div id="selectedImagesContainer" style="display: none;"></div>
+        </div>
+        <div class="margin-div report-container">
+            <h2>研究报告
+                <button id="copyToClipboardTop" class="icon-button" title="复制" style="display: none;">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button id="expandReportBtn" class="expand-button" title="展开">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+            </h2>
+            <!-- Add download buttons above the report container -->
+            <div class="report-actions" style="display: none;">
+                <a id="downloadLinkTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
+                <a id="downloadLinkWordTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-word"></i> Word
+                </a>
+                <a id="downloadLinkMdTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-lines"></i> Markdown
+                </a>
+            </div>
+            <div class="scrollable-container">
+                <div id="reportContainer"></div>
+            </div>
+            <div id="reportActions" style="display: none;">
+                <div class="alert alert-info" role="alert" id="status"></div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="margin-div chat-container" id="chatContainer" style="display: none;">
+            <h2><i class="fas fa-comments"></i> AI对话模块 <button id="expandChatBtn" class="expand-button" title="展开"><i class="fas fa-expand-alt"></i></button></h2>
+            <p class="text-muted">你可以询问上述任何细节问题</p>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-container">
+                <textarea id="chatInput" class="form-control chat-input" placeholder="询问有关此研究的问题..." rows="2"></textarea>
+                <button id="voiceInputBtn" class="btn btn-secondary" title="使用语音输入">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button id="sendChatBtn" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> 发送
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Conversation History Panel -->
+    <div class="history-panel" id="historyPanel">
+        <div class="history-panel-header">
+            <h3><i class="fas fa-history"></i> 研究历史</h3>
+            <div class="history-panel-actions">
+                <button id="historyPanelToggle" class="history-action-btn" title="关闭面板">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="history-panel-search">
+            <input type="text" id="historySearch" placeholder="搜索研究历史...">
+            <button id="historySearchBtn" class="history-action-btn" title="搜索">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+        <div class="history-panel-filters">
+            <select id="historySortOrder">
+                <option value="newest">最新优先</option>
+                <option value="oldest">最早优先</option>
+            </select>
+            <button id="historyClearBtn" class="history-action-btn" title="清除所有历史">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+        <div class="history-panel-entries" id="historyEntries">
+            <!-- Entries will be populated dynamically -->
+        </div>
+    </div>
+    
+    <!-- Sticky Downloads Bar -->
+    <div class="sticky-downloads-bar" id="stickyDownloadsBar" style="display: none;"> <!-- Initially hidden -->
+        <div class="download-buttons-container">
+            <a id="copyToClipboard" class="download-option-btn disabled">
+                <i class="fas fa-copy"></i> 复制 (Markdown)
+            </a>
+            <a id="downloadLinkMd" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-lines"></i> Markdown
+            </a>
+            <a id="downloadLink" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
+            <a id="downloadLinkWord" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-word"></i> Word
+            </a>
+            <a id="downloadLinkJson" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-code"></i> 日志 (JSON)
+            </a>
+        </div>
+    </div>
+
+    <footer>
+        <p>Seres Researcher &copy; 2025</p>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+    <script src="/site/scripts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-resize textarea as content grows
+            const taskTextarea = document.getElementById('task');
+            if (taskTextarea) {
+                // Set initial height
+                taskTextarea.setAttribute('style', 'height: 38px; overflow-y: hidden;');
+
+                // Function to resize textarea based on content
+                const resizeTextarea = () => {
+                    taskTextarea.style.height = 'auto';
+                    taskTextarea.style.height = taskTextarea.scrollHeight + 'px';
+                };
+
+                // Add event listeners for input and focus
+                taskTextarea.addEventListener('input', resizeTextarea);
+                taskTextarea.addEventListener('focus', resizeTextarea);
+            }
+
+            // Scroll to bottom button functionality
+            const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+            if (scrollToBottomBtn) {
+                scrollToBottomBtn.addEventListener('click', function() {
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                });
+            }
+
+            // 左侧导航面板交互
+            const navToggleBtn = document.getElementById('navPanelToggle');
+            const navPanel = document.getElementById('navPanel');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (navToggleBtn && navPanel && mainContent) {
+                navToggleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    navPanel.classList.toggle('active');
+                    mainContent.classList.toggle('with-left-panel');
+                    
+                    if (navPanel.classList.contains('active')) {
+                        navToggleBtn.style.left = '250px';
+                    } else {
+                        navToggleBtn.style.left = '0';
+                    }
+                });
+
+                // 点击外部关闭面板
+                document.addEventListener('click', function(e) {
+                    if (!navPanel.contains(e.target) && e.target !== navToggleBtn && navPanel.classList.contains('active')) {
+                        navPanel.classList.remove('active');
+                        mainContent.classList.remove('with-left-panel');
+                        navToggleBtn.style.left = '0';
+                    }
+                });
+            }
+
+            // WebSocket面板交互
+            const wsToggleBtn = document.getElementById('websocketPanelToggle');
+            const wsPanel = document.getElementById('websocketPanel');
+            
+            if (wsToggleBtn && wsPanel && mainContent) {
+                wsToggleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    wsPanel.classList.toggle('active');
+                    mainContent.classList.toggle('with-right-panel');
+                });
+
+                // 点击外部关闭面板
+                document.addEventListener('click', function(e) {
+                    if (!wsPanel.contains(e.target) && e.target !== document.getElementById('websocketPanelOpenBtn') && wsPanel.classList.contains('active')) {
+                        wsPanel.classList.remove('active');
+                        mainContent.classList.remove('with-right-panel');
+                    }
+                });
+            }
+
+            // 打开WebSocket面板按钮
+            const wsOpenBtn = document.getElementById('websocketPanelOpenBtn');
+            if (wsOpenBtn && wsPanel && mainContent) {
+                wsOpenBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    wsPanel.classList.add('active');
+                    mainContent.classList.add('with-right-panel');
+                });
+            }
+
+            // 车型选择功能
+            let selectedVehicles = [];
+            const selectionHint = document.getElementById('selectionHint');
+            const taskInput = document.getElementById('task');
+
+            // 更新提示信息
+            function updateSelectionHint() {
+                if (selectionHint) {
+                    if (selectedVehicles.length === 0) {
+                        selectionHint.textContent = '请选择要对比的车型';
+                    } else if (selectedVehicles.length === 1) {
+                        selectionHint.textContent = `已选择: ${selectedVehicles[0]}，请再选择一个竞品车型`;
+                    } else {
+                        selectionHint.textContent = `将对比: ${selectedVehicles.join(' vs ')}`;
+                        // 自动填充到输入框
+                        if (taskInput) {
+                            taskInput.value = `请对比分析${selectedVehicles[0]}和${selectedVehicles[1]}的竞品参数，包括价格、尺寸、动力系统等`;
+                        }
+                    }
+                }
+            }
+
+            // 重置选择状态
+            function resetSelection() {
+                selectedVehicles = [];
+                document.querySelectorAll('.vehicle-card1.selected, .vehicle-card.selected').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                updateSelectionHint();
+            }
+
+            // 设置车型选择事件
+            function setupVehicleSelection() {
+                document.querySelectorAll('.vehicle-card1, .vehicle-card').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const vehicle = this.getAttribute('data-vehicle');
+                        
+                        // 如果已经选中了这个车型，则取消选择
+                        const index = selectedVehicles.indexOf(vehicle);
+                        if (index > -1) {
+                            selectedVehicles.splice(index, 1);
+                            this.classList.remove('selected');
+                        } else {
+                            // 最多选择两个车型
+                            if (selectedVehicles.length < 2) {
+                                selectedVehicles.push(vehicle);
+                                this.classList.add('selected');
+                            } else {
+                                // 如果已经选择了两个，先取消第一个选择
+                                const firstSelected = document.querySelector(`[data-vehicle="${selectedVehicles[0]}"]`);
+                                if (firstSelected) firstSelected.classList.remove('selected');
+                                selectedVehicles.shift();
+                                selectedVehicles.push(vehicle);
+                                this.classList.add('selected');
+                            }
+                        }
+                        
+                        updateSelectionHint();
+                        
+                        // 如果已经选择了两个车型，自动滚动到表单
+                        if (selectedVehicles.length === 2 && taskInput) {
+                            setTimeout(() => {
+                                taskInput.scrollIntoView({ behavior: 'smooth' });
+                            }, 300);
+                        }
+                    });
+                });
+            }
+
+            // 设置快速访问卡片点击事件
+            function setupQuickAccessCards() {
+                document.querySelectorAll('.quick-access-card').forEach(card => {
+                    card.addEventListener('click', function() {
+                        // 添加点击效果
+                        this.classList.add('clicked');
+                        setTimeout(() => {
+                            this.classList.remove('clicked');
+                        }, 200);
+                        
+                        // 获取目标URL
+                        const target = this.getAttribute('data-target');
+                        if (target && target !== 'none.html') {
+                            // 如果有目标URL且不是none.html，则跳转到该URL
+                            window.location.href = target;
+                        } else {
+                            // 否则可以添加其他处理逻辑，比如显示提示
+                            alert('此功能正在开发中');
+                        }
+                    });
+                });
+            }
+
+            // 初始化车型选择功能
+            setupVehicleSelection();
+            
+            // 初始化快速访问卡片功能
+            setupQuickAccessCards();
+
+            // 确保所有元素加载完成后再执行
+            setTimeout(() => {
+                window.dispatchEvent(new Event('scroll'));
+            }, 100);
+        });
+    </script>
+</body>
+</html>
