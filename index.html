@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <title>SERES AI情报中枢</title>
+    <meta name="description" content="由Qwen-Max驱动的研究助手">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="./static/seres.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/site/styles.css" />
+    <style>
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+        }
+
+        .agent-name {
+            text-align: center;
+        }
+
+        .agent-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .agent-choices {
+            display: none;
+        }
+
+        .btn-show {
+            display: none;
+        }
+
+        /* 图标按钮内联样式 */
+        .icon-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .icon-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 顶部右上角导航按钮 */
+        .nav-buttons {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        /* 功能卡片样式 */
+        .feature-cards-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .feature-card {
+            background: rgba(20, 20, 30, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px 25px;
+            width: 280px;
+            text-align: center;
+            border: 2px solid rgba(78, 157, 221, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(78, 157, 221, 0.6);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-card.active {
+            border-color: #4E9DDD;
+            box-shadow: 0 0 25px rgba(78, 157, 221, 0.4);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4E9DDD, #2C7BBF);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 20px;
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-bottom: 15px;
+        }
+
+
+        /* 功能选项面板 */
+        .feature-options {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: rgba(30, 30, 40, 0.9);
+            border-radius: 15px;
+            border: 1px solid rgba(78, 157, 221, 0.3);
+        }
+
+        .feature-options.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 深度研究选项 */
+        .research-options {
+            text-align: center;
+        }
+
+        .research-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid rgba(78, 157, 221, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFFFFF;
+            font-size: 16px;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        .research-input:focus {
+            border-color: #4E9DDD;
+            outline: none;
+            box-shadow: 0 0 10px rgba(78, 157, 221, 0.3);
+        }
+
+        .research-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* 竞品对比选项 */
+        .comparison-options {
+            text-align: center;
+        }
+
+        .car-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(78, 157, 221, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFFFFF;
+            font-size: 16px;
+            margin-bottom: 15px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234E9DDD' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 20px;
+        }
+
+        .car-select:focus {
+            border-color: #4E9DDD;
+            outline: none;
+            box-shadow: 0 0 10px rgba(78, 157, 221, 0.3);
+        }
+
+        .car-select option {
+            background: #2a2a3a;
+            color: #FFFFFF;
+        }
+
+        /* 舆情监控选项 */
+        .sentiment-options {
+            text-align: center;
+        }
+
+        /* 开始研究按钮 */
+        .start-research-btn {
+            background: linear-gradient(135deg, #4E9DDD, #2C7BBF);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(78, 157, 221, 0.3);
+        }
+
+        .start-research-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(78, 157, 221, 0.4);
+        }
+
+        .start-research-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 隐藏原始表单 */
+        .original-form {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 导航按钮 -->
+    <div class="nav-buttons">
+        <div id="historyPanelOpenBtn" class="top-history-button">
+            <i class="fas fa-history"></i> 历史记录
+        </div>
+        <div id="websocketPanelOpenBtn" class="top-websocket-button">
+            <i class="fas fa-network-wired"></i> 状态
+        </div>
+    </div>
+
+    <!-- WebSocket状态面板 -->
+    <div class="websocket-panel" id="websocketPanel">
+        <div class="websocket-panel-header">
+            <h3><i class="fas fa-plug"></i> 连接状态</h3>
+            <div class="websocket-panel-actions">
+                <button id="websocketPanelToggle" class="websocket-action-btn" title="关闭面板">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+        </div>
+        <div class="websocket-status">
+            <div class="status-item">
+                <span class="status-label">连接状态：</span>
+                <span class="status-value" id="connectionStatus">已断开</span>
+                <span class="status-indicator" id="connectionIndicator"></span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">研究状态：</span>
+                <span class="status-value" id="researchStatus">未激活</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">连接时长：</span>
+                <span class="status-value" id="connectionDuration">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">最后活动：</span>
+                <span class="status-value" id="lastActivity">-</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">就绪状态：</span>
+                <span class="status-value" id="readyState">-</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-item">
+                <span class="status-label">连接尝试：</span>
+                <span class="status-value" id="connectionAttempts">0</span>
+            </div>
+            <div class="status-divider"></div>
+            <div class="status-item">
+                <span class="status-label">当前任务：</span>
+                <span class="status-value" id="currentTask">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 返回底部按钮 -->
+    <div class="scroll-to-bottom" id="scrollToBottomBtn">
+        <i class="fas fa-arrow-down"></i>
+    </div>
+
+    <section class="landing">
+        <div class="max-w-5xl mx-auto text-center">
+            <img src="./static/seres.png" class="avatar" alt="Seres Logo">
+            <h1 class="text-4xl font-extrabold mx-auto lg:text-7xl">
+                SERES
+            </h1>
+            <p class="max-w-6xl mx-auto text-gray-600 mt-8" style="font-size:20px; color: rgba(255,255,255,0.8);">
+                AI情报中枢系统
+            </p>
+            <p class="max-w-6xl mx-auto text-gray-600 mt-4" style="font-size:16px; color: rgba(255,255,255,0.6);">
+                欢迎使用 Seres AI情报中枢Agent系统，<br>
+                您的智能情报助手，可为您完成深度研究、竞品车型分析和舆情分析等功能。
+            </p>
+        </div>
+    </section>
+
+    <main class="container" id="form">
+        <div class="agent-item">
+            <img src="./static/seres.png" class="avatar" alt="Seres Logo">
+            <h3 class="agent-name" style="color: #FFFFFF; margin-top: 15px;">赛力斯AI情报中枢</h3>
+        </div>
+
+        <!-- 功能卡片 -->
+        <div class="feature-cards-container">
+            <!-- 深度研究卡片 -->
+            <div class="feature-card" id="researchCard">
+                <div class="feature-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="feature-title">深度研究</div>
+            </div>
+
+            <!-- 竞品参数对比卡片 -->
+            <div class="feature-card" id="comparisonCard">
+                <div class="feature-icon">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="feature-title">竞品参数对比</div>
+            </div>
+
+            <!-- 舆情监控卡片 -->
+            <div class="feature-card" id="sentimentCard">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="feature-title">舆情分析</div>
+            </div>
+        </div>
+
+        <!-- 深度研究选项面板 -->
+<div class="feature-options" id="researchOptions">
+    <div class="research-options">
+        <h4 style="color: #FFFFFF; margin-bottom: 20px; text-align: center;">深度研究</h4>
+
+        <!-- 新增：报告来源选择器 -->
+        <div class="source-selector-container">
+            <label class="source-option">
+                <input type="radio" name="report_source_option" value="web" checked>
+                <span class="source-label">
+                    <i class="fas fa-globe"></i> 互联网
+                </span>
+            </label>
+            <label class="source-option">
+                <input type="radio" name="report_source_option" value="local">
+                <span class="source-label">
+                    <i class="fas fa-folder-open"></i> 本地文档
+                </span>
+            </label>
+            <label class="source-option">
+                <input type="radio" name="report_source_option" value="hybrid">
+                <span class="source-label">
+                    <i class="fas fa-search-plus"></i> 混合搜索
+                </span>
+            </label>
+        </div>
+
+        <!-- 主内容区域 - 垂直布局 -->
+        <div class="research-main-content">
+            <!-- 文件列表和上传区 (默认隐藏，当选择本地文档或混合搜索时显示在顶部) -->
+            <div class="research-file-area" id="researchFileArea" style="display: none;">
+                <div class="file-list-header">
+                    <h5>可用文件</h5>
+                    <button id="uploadFileBtn" class="upload-btn" title="上传本地文件">
+                        <i class="fas fa-upload"></i> 上传
+                    </button>
+                    <input type="file" id="fileUploadInput" style="display: none;" multiple>
+                </div>
+                <div id="fileListContainer" class="file-list">
+                    <p class="no-files">请选择"本地文档"或"混合搜索"以查看文件</p>
+                </div>
+            </div>
+
+            <!-- 输入和操作区 -->
+            <div class="research-input-area">
+                <textarea id="researchInput" class="research-input" placeholder="请输入您想要深度研究的主题、问题或想法..."></textarea>
+                <button class="start-research-btn" id="startResearchBtn">
+                    <i class="fas fa-play"></i> 开始研究
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+        <!-- 竞品对比选项面板 -->
+        <div class="feature-options" id="comparisonOptions">
+            <div class="comparison-options">
+                <h4 style="color: #FFFFFF; margin-bottom: 20px; text-align: center;">竞品参数对比</h4>
+                <select id="car1Select" class="car-select">
+                    <option value="">请选择第一个车型</option>
+                    <option value="问界M8">问界M8</option>
+                    <option value="小米SU7">小米SU7</option>
+                    <option value="理想L9">理想L9</option>
+                    <option value="蔚来ES8">蔚来ES8</option>
+                    <option value="特斯拉Model Y">特斯拉Model Y</option>
+                    <option value="比亚迪汉EV">比亚迪汉EV</option>
+                    <option value="极氪001">极氪001</option>
+                    <option value="小鹏P7">小鹏P7</option>
+                    <option value="other">其他 (自定义车型)</option>
+                </select>
+                <input type="text" id="car1CustomInput" class="car-input" placeholder="请输入车型名称" style="display: none;">
+                <button id="car1SwitchBtn" class="switch-to-select-btn" style="display: none;" title="返回选择列表">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+                <select id="car2Select" class="car-select">
+                    <option value="">请选择第二个车型</option>
+                    <option value="问界M8">问界M8</option>
+                    <option value="小米SU7">小米SU7</option>
+                    <option value="理想L9">理想L9</option>
+                    <option value="蔚来ES8">蔚来ES8</option>
+                    <option value="特斯拉Model Y">特斯拉Model Y</option>
+                    <option value="比亚迪汉EV">比亚迪汉EV</option>
+                    <option value="极氪001">极氪001</option>
+                    <option value="小鹏P7">小鹏P7</option>
+                    <option value="other">其他 (自定义车型)</option>
+                </select>
+                <input type="text" id="car2CustomInput" class="car-input" placeholder="请输入车型名称" style="display: none;">
+                <button id="car2SwitchBtn" class="switch-to-select-btn" style="display: none;" title="返回选择列表">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+                <button class="start-research-btn" id="startComparisonBtn">
+                    <i class="fas fa-play"></i> 开始对比
+                </button>
+            </div>
+        </div>
+
+        <!-- 舆情监控选项面板 -->
+        <div class="feature-options" id="sentimentOptions">
+            <div class="sentiment-options">
+                <h4 style="color: #FFFFFF; margin-bottom: 20px; text-align: center;">舆情分析</h4>
+                <select id="sentimentCarSelect" class="car-select">
+                    <option value="">请选择要分析的车型</option>
+                    <option value="问界M8">问界M8</option>
+                    <option value="小米SU7">小米SU7</option>
+                    <option value="理想L9">理想L9</option>
+                    <option value="蔚来ES8">蔚来ES8</option>
+                    <option value="特斯拉Model Y">特斯拉Model Y</option>
+                    <option value="比亚迪汉EV">比亚迪汉EV</option>
+                    <option value="极氪001">极氪001</option>
+                    <option value="小鹏P7">小鹏P7</option>
+                    <option value="其他">其他（请在下方输入）</option>
+                </select>
+                <textarea id="customSentimentInput" class="research-input" placeholder="请在此输入具体的车型名称或事件..." style="display: none; min-height: 80px; margin-top: 15px;"></textarea>
+                <button class="start-research-btn" id="startSentimentBtn">
+                    <i class="fas fa-play"></i> 开始分析
+                </button>
+            </div>
+        </div>
+
+        <!-- 原始表单（隐藏，用于后端兼容） -->
+        <form method="POST" class="mt-3 original-form" id="researchForm">
+            <div class="form-group">
+                <textarea id="task" name="task" class="form-control highlight-connection" placeholder="输入任何主题、问题或想法..." required autocomplete="on"></textarea>
+                <input type="radio" name="agent" id="autoAgent" value="Auto Agent" checked hidden>
+            </div>
+            <div class="form-group">
+                <select name="report_type" id="report_type" class="form-control highlight-connection" required>
+                    <option value="research_report">深度研究</option>
+                    <option value="custom_report1">竞品车型分析</option>
+                    <option value="custom_report2">舆情分析</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <select name="tone" id="tone" class="form-control highlight-connection" required>
+                    <option value="Objective">客观 - 事实和发现的中立呈现</option>
+                    <option value="Formal">正式 - 遵循学术标准，使用复杂语言和结构</option>
+                    <option value="Analytical">分析 - 对数据和理论的批判性评估</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <select name="report_source" id="report_source" class="form-control highlight-connection" required>
+                    <option value="web">互联网</option>
+                    <option value="local">本地文档</option>
+                    <option value="hybrid">混合搜索</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control highlight-connection" id="queryDomains" name="query_domains" placeholder="输入逗号分隔的域名" autocomplete="on">
+            </div>
+            <input type="submit" value="开始研究" class="btn btn-primary button-padding" id="submitButton">
+        </form>
+
+        <!-- JSON按钮 -->
+        <div class="margin-div" id="jsonButtonContainer" style="display: none; text-align: right; margin-bottom: 10px;">
+            <a id="downloadLinkJsonTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-code"></i> JSON
+            </a>
+        </div>
+
+        <div class="margin-div research-output-container">
+            <!-- 加载动画 -->
+            <h2><div id="modernSpinner" class="modern-spinner"></div> 研究进度 <button id="expandOutputBtn" class="expand-button" title="展开"><i class="fas fa-expand-alt"></i></button></h2>
+            <p class="mt-2 text-left" style="font-size: 0.8rem;">
+                观察AI实时收集信息并分析您的主题。</p>
+            <div id="output"></div>
+        </div>
+        <div class="images_div">
+            <div id="selectedImagesContainer" style="display: none;"></div>
+        </div>
+        <div class="margin-div report-container">
+            <h2>研究报告
+                <button id="copyToClipboardTop" class="icon-button" title="复制" style="display: none;">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button id="expandReportBtn" class="expand-button" title="展开">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+            </h2>
+            <!-- 下载按钮 -->
+            <div class="report-actions" style="display: none;">
+                <a id="downloadLinkTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
+                <a id="downloadLinkWordTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-word"></i> Word
+                </a>
+                <a id="downloadLinkMdTop" href="#" class="report-action-btn disabled" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-file-lines"></i> Markdown
+                </a>
+            </div>
+            <div id="reportContainer"></div>
+            <div id="reportActions" style="display: none;">
+                <div class="alert alert-info" role="alert" id="status"></div>
+            </div>
+        </div>
+
+        <!-- 聊天容器 -->
+        <div class="margin-div chat-container" id="chatContainer" style="display: none;">
+            <h2><i class="fas fa-comments"></i> 与AI讨论此研究 <button id="expandChatBtn" class="expand-button" title="展开"><i class="fas fa-expand-alt"></i></button></h2>
+            <p class="text-muted">提问</p>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-container">
+                <textarea id="chatInput" class="form-control chat-input" placeholder="询问研究报告的相关问题..." rows="2"></textarea>
+                <button id="voiceInputBtn" class="btn btn-secondary" title="语音输入">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button id="sendChatBtn" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> 发送
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 历史记录面板 -->
+    <div class="history-panel" id="historyPanel">
+        <div class="history-panel-header">
+            <h3><i class="fas fa-history"></i> 研究历史记录</h3>
+            <div class="history-panel-actions">
+                <button id="historyPanelToggle" class="history-action-btn" title="关闭面板">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="history-panel-search">
+            <input type="text" id="historySearch" placeholder="搜索研究历史...">
+            <button id="historySearchBtn" class="history-action-btn" title="搜索">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+        <div class="history-panel-filters">
+            <select id="historySortOrder">
+                <option value="newest">最新优先</option>
+                <option value="oldest">最早优先</option>
+            </select>
+            <button id="historyClearBtn" class="history-action-btn" title="清除历史">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+        <div class="history-panel-entries" id="historyEntries">
+        </div>
+    </div>
+    
+    <!-- 固定下载栏 -->
+    <div class="sticky-downloads-bar" id="stickyDownloadsBar" style="display: none;">
+        <div class="download-buttons-container">
+            <a id="copyToClipboard" class="download-option-btn disabled">
+                <i class="fas fa-copy"></i> 复制 (Markdown)
+            </a>
+            <a id="downloadLinkMd" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-lines"></i> Markdown
+            </a>
+            <a id="downloadLink" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
+            <a id="downloadLinkWord" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-word"></i> Word
+            </a>
+            <a id="downloadLinkJson" href="#" class="download-option-btn disabled" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-file-code"></i> 日志 (JSON)
+            </a>
+        </div>
+    </div>
+
+    <footer>
+        <p>Seres AI情报中枢Agent系统 &copy; 2025</p>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+    <script src="/site/scripts.js"></script>
+    <script>
+        // 自动调整文本区域大小
+        const taskTextarea = document.getElementById('task');
+        if (taskTextarea) {
+            taskTextarea.setAttribute('style', 'height: 38px; overflow-y: hidden;');
+            const resizeTextarea = () => {
+                taskTextarea.style.height = 'auto';
+                taskTextarea.style.height = taskTextarea.scrollHeight + 'px';
+            };
+            taskTextarea.addEventListener('input', resizeTextarea);
+            taskTextarea.addEventListener('focus', resizeTextarea);
+        }
+
+        // 返回底部按钮功能
+        const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+        window.addEventListener('scroll', function() {});
+        scrollToBottomBtn.addEventListener('click', function() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        });
+
+        // 窗口大小变化处理
+        window.addEventListener('resize', function () {
+            const viewportWidth = window.innerWidth;
+            const featurePanel = document.querySelector('.feature-panel');
+            if (featurePanel) {
+                if (viewportWidth < 1400) {
+                    featurePanel.style.display = 'none';
+                } else {
+                    featurePanel.style.display = 'block';
+                    const panelWidth = Math.min(280, Math.max(200, viewportWidth * 0.15));
+                    featurePanel.style.width = `${panelWidth}px`;
+                }
+            }
+        });
+
+        // 初始滚动事件
+        window.addEventListener('DOMContentLoaded', function () {
+            setTimeout(() => {
+                window.dispatchEvent(new Event('scroll'));
+            }, 100);
+        });
+    </script>
+</body>
+
+</html>
+
+

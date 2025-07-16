@@ -60,6 +60,9 @@ const SeresResearcher = (() => {
     // Initialize WebSocket monitoring panel
     initWebSocketPanel();
 
+    // Initialize feature cards functionality
+    initFeatureCards();
+
     // The download bar is now fixed in place with CSS
     // No need to set display property here
 
@@ -74,6 +77,442 @@ const SeresResearcher = (() => {
       loadingOverlay.classList.add('loading-hidden');
     }
   }
+  const fetchAndDisplayFiles = async () => {
+    const fileListContainer = document.getElementById('fileListContainer');
+    if (!fileListContainer) return;
+
+    fileListContainer.innerHTML = '<p class="no-files">正在加载文件...</p>';
+
+    try {
+        const response = await fetch('/files/');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const files = data.files;
+
+        fileListContainer.innerHTML = '';
+
+        if (files && files.length > 0) {
+            files.forEach(file => {
+                const fileElement = document.createElement('div');
+                fileElement.className = 'file-list-item';
+                
+                const iconClass = file.endsWith('.pdf') ? 'fa-file-pdf' : 
+                                  file.endsWith('.docx') ? 'fa-file-word' : 'fa-file-alt';
+
+                // --- 新增：创建包含文件名和图标的容器 ---
+                const nameContainer = document.createElement('div');
+                nameContainer.className = 'file-name-container';
+                nameContainer.innerHTML = `<i class="fas ${iconClass}"></i><span>${file}</span>`;
+                
+                // --- 新增：创建删除按钮 ---
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-file-btn';
+                deleteBtn.title = `删除文件 ${file}`;
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                
+                // --- 新增：为删除按钮绑定点击事件 ---
+                deleteBtn.addEventListener('click', (event) => {
+                    event.stopPropagation(); // 防止事件冒泡
+                    // 弹出确认框，防止误删
+                    if (confirm(`您确定要删除文件 "${file}" 吗？此操作无法撤销。`)) {
+                        handleFileDeletion(file);
+                    }
+                });
+
+                // 将文件名容器和删除按钮添加到列表项中
+                fileElement.appendChild(nameContainer);
+                fileElement.appendChild(deleteBtn);
+                
+                fileListContainer.appendChild(fileElement);
+            });
+        } else {
+            fileListContainer.innerHTML = '<p class="no-files">暂无文件</p>';
+        }
+    } catch (error) {
+        console.error('获取文件列表失败:', error);
+        fileListContainer.innerHTML = '<p class="no-files" style="color: #ED4E4E;">加载文件失败</p>';
+    }
+};
+
+  const handleFileUpload = async (file) => { // 函数现在接收单个文件，而不是文件列表
+    const formData = new FormData();
+    // --- 修改点 3：字段名从 uploaded_files 改为 file ---
+    formData.append('file', file); 
+
+    showToast(`正在上传: ${file.name}`, 3000);
+
+    try {
+        // --- 修改点 4：API路径从 /api/upload 改为 /upload/ ---
+        const response = await fetch('/upload/', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (response.ok) {
+            showToast(`文件 ${file.name} 上传成功！`, 3000);
+            // 上传成功后，刷新文件列表
+            fetchAndDisplayFiles();
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || '上传失败'); // 适配FastAPI的错误详情
+        }
+    } catch (error) {
+        console.error('文件上传失败:', error);
+        showToast(`文件上传失败: ${error.message}`, 5000);
+    }
+};
+  const handleFileDeletion = async (filename) => {
+    showToast(`正在删除: ${filename}`, 2000);
+
+    try {
+        // 对文件名进行编码，以防文件名中包含特殊字符
+        const encodedFilename = encodeURIComponent(filename);
+        
+        // --- 调用后端的DELETE接口 ---
+        const response = await fetch(`/files/${encodedFilename}`, {
+            method: 'DELETE',
+        });
+
+        if (response.ok) {
+            showToast(`文件 ${filename} 已成功删除！`, 3000);
+            // 删除成功后，立即刷新文件列表以反映变化
+            fetchAndDisplayFiles();
+        } else {
+            // 尝试解析后端返回的错误信息
+            const errorData = await response.json();
+            throw new Error(errorData.detail || '删除失败');
+        }
+    } catch (error) {
+        console.error('文件删除失败:', error);
+        showToast(`文件删除失败: ${error.message}`, 5000);
+    }
+};
+  // Initialize feature cards functionality
+  const initFeatureCards = () => {
+    // Get all feature cards
+    const researchCard = document.getElementById('researchCard');
+    const comparisonCard = document.getElementById('comparisonCard');
+    const sentimentCard = document.getElementById('sentimentCard');
+
+    // Get all option panels
+    const researchOptions = document.getElementById('researchOptions');
+    const comparisonOptions = document.getElementById('comparisonOptions');
+    const sentimentOptions = document.getElementById('sentimentOptions');
+
+    // Get all start buttons
+    const startResearchBtn = document.getElementById('startResearchBtn');
+    const startComparisonBtn = document.getElementById('startComparisonBtn');
+    const startSentimentBtn = document.getElementById('startSentimentBtn');
+
+    // Get form elements for backend compatibility
+    const taskInput = document.getElementById('task');
+    const reportTypeSelect = document.getElementById('report_type');
+    const toneSelect = document.getElementById('tone');
+    const sourceOptions = document.querySelectorAll('input[name="report_source_option"]');
+    const fileArea = document.getElementById('researchFileArea');
+    const reportSourceSelect = document.getElementById('report_source');
+    const queryDomainsInput = document.getElementById('queryDomains');
+
+    // Set default values for hidden form elements
+    toneSelect.value = 'Analytical';
+    reportSourceSelect.value = 'web';
+    queryDomainsInput.value = '';
+
+    // Function to hide all option panels
+    const hideAllOptions = () => {
+      researchOptions.classList.remove('active');
+      comparisonOptions.classList.remove('active');
+      sentimentOptions.classList.remove('active');
+    };
+
+    // Function to remove active state from all cards
+    const removeAllActiveCards = () => {
+      researchCard.classList.remove('active');
+      comparisonCard.classList.remove('active');
+      sentimentCard.classList.remove('active');
+    };
+
+    // Research card click handler
+    researchCard.addEventListener('click', () => {
+      removeAllActiveCards();
+      hideAllOptions();
+      
+      researchCard.classList.add('active');
+      researchOptions.classList.add('active');
+      
+      // Set form values for backend compatibility
+      reportTypeSelect.value = 'research_report';
+      const currentSource = document.querySelector('input[name="report_source_option"]:checked').value;
+        if (currentSource === 'local' || currentSource === 'hybrid') {
+            fileArea.style.display = 'block';
+            fetchAndDisplayFiles(); // 只有在需要时才加载文件
+        } else {
+            fileArea.style.display = 'none';
+        }
+    });
+
+    // 为来源选择器添加事件监听
+    sourceOptions.forEach(option => {
+        option.addEventListener('change', (event) => {
+            const selectedValue = event.target.value;
+            
+            // 同步更新隐藏的原始select的值，以确保表单提交时数据正确
+            reportSourceSelect.value = selectedValue;
+
+            if (selectedValue === 'local' || selectedValue === 'hybrid') {
+                fileArea.style.display = 'block';
+                fetchAndDisplayFiles(); // 当切换到需要文件的选项时，加载文件
+            } else {
+                fileArea.style.display = 'none';
+            }
+        });
+
+
+    });
+
+    // Comparison card click handler
+    comparisonCard.addEventListener('click', () => {
+      removeAllActiveCards();
+      hideAllOptions();
+      
+      comparisonCard.classList.add('active');
+      comparisonOptions.classList.add('active');
+      
+      // Set form values for backend compatibility
+      reportTypeSelect.value = 'custom_report1';
+    });
+
+
+    // Sentiment card click handler
+    sentimentCard.addEventListener('click', () => {
+      removeAllActiveCards();
+      hideAllOptions();
+      
+      sentimentCard.classList.add('active');
+      sentimentOptions.classList.add('active');
+      
+      // Set form values for backend compatibility
+      reportTypeSelect.value = 'custom_report2';
+    });
+
+    // Handle sentiment car selection change
+    const sentimentCarSelect = document.getElementById('sentimentCarSelect');
+    const customSentimentInput = document.getElementById('customSentimentInput');
+    
+    if (sentimentCarSelect && customSentimentInput) {
+      sentimentCarSelect.addEventListener('change', () => {
+        if (sentimentCarSelect.value === '其他') {
+          customSentimentInput.style.display = 'block';
+          customSentimentInput.focus();
+        } else {
+          customSentimentInput.style.display = 'none';
+          customSentimentInput.value = '';
+        }
+      });
+    }
+    const uploadFileBtn = document.getElementById('uploadFileBtn');
+    const fileUploadInput = document.getElementById('fileUploadInput');
+
+    if (uploadFileBtn && fileUploadInput) {
+        uploadFileBtn.addEventListener('click', () => {
+            fileUploadInput.click();
+        });
+
+        fileUploadInput.addEventListener('change', (event) => {
+            const files = event.target.files;
+            if (files.length > 0) {
+                // --- 修改点 5：循环处理每个文件，并逐一调用上传函数 ---
+                // 因为后端一次只处理一个文件，所以前端需要一个一个地发送。
+                for (const file of files) {
+                    handleFileUpload(file);
+                }
+            }
+            // 清空input的值，以便用户可以重复上传同一个文件
+            event.target.value = ''; 
+        });
+    }
+
+    // Start research button handler
+    if (startResearchBtn) {
+      startResearchBtn.addEventListener('click', () => {
+        const researchInput = document.getElementById('researchInput');
+        if (!researchInput.value.trim()) {
+          alert('请输入研究主题');
+          researchInput.focus();
+          return;
+        }
+        
+        // Set task input value for backend
+        taskInput.value = researchInput.value.trim();
+        
+        // Start research
+        startResearch();
+      });
+    }
+    
+    const car1Select = document.getElementById('car1Select');
+    const car2Select = document.getElementById('car2Select');
+    const car1CustomInput = document.getElementById('car1CustomInput');
+    const car2CustomInput = document.getElementById('car2CustomInput');
+    const car1SwitchBtn = document.getElementById('car1SwitchBtn');
+    const car2SwitchBtn = document.getElementById('car2SwitchBtn');
+
+
+    /**
+     * 可复用的函数，用于处理下拉框到输入框的切换逻辑
+     * @param {HTMLSelectElement} selectElement - 下拉框元素
+     * @param {HTMLInputElement} inputElement - 输入框元素
+     * @param {HTMLButtonElement} switchBtn
+     */
+    const setupCarSelectorSwitch = (selectElement, inputElement, switchBtn) => {
+        // --- 切换到输入框的逻辑 ---
+        const switchToInput = () => {
+            // --- 新增：获取下拉框的精确尺寸 ---
+            const selectRect = selectElement.getBoundingClientRect();
+            
+            // --- 新增：将尺寸应用到输入框 ---
+            // 使用 box-sizing: border-box; 可以让设置宽高更简单
+            inputElement.style.width = `${selectRect.width}px`;
+            inputElement.style.height = `${selectRect.height}px`;
+            
+            // 确保输入框的内边距、边框等样式与下拉框在CSS中已尽可能一致
+            // JS在这里只负责最后的大小校准
+
+            selectElement.style.display = 'none';
+            inputElement.style.display = 'block';
+            switchBtn.style.display = 'flex';
+            inputElement.focus();
+        };
+
+        // --- 切换回下拉框的逻辑 ---
+        const switchToSelect = () => {
+            inputElement.style.display = 'none';
+            switchBtn.style.display = 'none'; // 隐藏切换按钮
+            selectElement.style.display = 'block';
+
+            // 如果输入框有内容，创建一个临时的<option>来显示它
+            const customValue = inputElement.value.trim();
+            if (customValue) {
+                // 检查是否已存在自定义选项
+                let customOption = selectElement.querySelector('option[data-custom]');
+                if (!customOption) {
+                    customOption = document.createElement('option');
+                    customOption.dataset.custom = true; // 标记为自定义选项
+                    // 插入到"其他"选项之前
+                    const otherOption = selectElement.querySelector('option[value="other"]');
+                    selectElement.insertBefore(customOption, otherOption);
+                }
+                customOption.value = customValue;
+                customOption.textContent = customValue;
+                selectElement.value = customValue; // 选中该选项
+            } else {
+                // 如果输入框为空，则重置为"请选择"
+                selectElement.value = '';
+            }
+        };
+
+        // --- 事件绑定 ---
+        selectElement.addEventListener('change', () => {
+            if (selectElement.value === 'other') {
+                switchToInput();
+            }
+        });
+
+        switchBtn.addEventListener('click', switchToSelect);
+
+        inputElement.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                switchToSelect();
+            }
+        });
+    };
+
+    // 将新的切换逻辑应用到两个选择器上
+    if (car1Select && car1CustomInput && car1SwitchBtn) {
+        setupCarSelectorSwitch(car1Select, car1CustomInput, car1SwitchBtn);
+    }
+    if (car2Select && car2CustomInput && car2SwitchBtn) {
+        setupCarSelectorSwitch(car2Select, car2CustomInput, car2SwitchBtn);
+    }
+     if (startSentimentBtn) {
+      startSentimentBtn.addEventListener('click', () => {
+        const sentimentCarSelect = document.getElementById('sentimentCarSelect');
+        const customSentimentInput = document.getElementById('customSentimentInput');
+        
+        let sentimentTopic = '';
+
+        // 检查是使用下拉框还是自定义输入
+        if (sentimentCarSelect.value === '其他') {
+          sentimentTopic = customSentimentInput.value.trim();
+        } else {
+          sentimentTopic = sentimentCarSelect.value;
+        }
+
+        // 验证输入是否为空
+        if (!sentimentTopic) {
+          alert('请选择或输入要分析的车型或事件');
+          return;
+        }
+        
+        // 将获取到的主题赋值给隐藏的表单任务输入框
+        taskInput.value = sentimentTopic;
+        
+        // 调用核心函数开始分析
+        startResearch();
+      });
+    }
+
+    // “开始对比”按钮的点击逻辑保持不变，因为它已经能正确处理
+    if (startComparisonBtn) {
+        startComparisonBtn.addEventListener('click', () => {
+            let car1Value = (car1Select.style.display !== 'none' && car1Select.value !== 'other') 
+                            ? car1Select.value 
+                            : car1CustomInput.value.trim();
+            
+            if (!car1Value) {
+                alert('请选择或输入第一个车型');
+                return;
+            }
+
+            let car2Value = (car2Select.style.display !== 'none' && car2Select.value !== 'other')
+                            ? car2Select.value
+                            : car2CustomInput.value.trim();
+
+            if (!car2Value) {
+                alert('请选择或输入第二个车型');
+                return;
+            }
+            
+            if (car1Value === car2Value) {
+                alert('请选择或输入不同的车型进行对比');
+                return;
+            }
+            
+            taskInput.value = `${car1Value}和${car2Value}`;
+            startResearch();
+        });
+    }
+
+    // Auto-resize textarea for research input
+    const researchInput = document.getElementById('researchInput');
+    if (researchInput) {
+      researchInput.addEventListener('input', () => {
+        researchInput.style.height = 'auto';
+        researchInput.style.height = researchInput.scrollHeight + 'px';
+      });
+    }
+
+    // Auto-resize textarea for custom sentiment input
+    if (customSentimentInput) {
+      customSentimentInput.addEventListener('input', () => {
+        customSentimentInput.style.height = 'auto';
+        customSentimentInput.style.height = customSentimentInput.scrollHeight + 'px';
+      });
+    }
+  };
 
   // Check if cookies are enabled
   const checkCookiesEnabled = () => {
@@ -774,7 +1213,7 @@ const SeresResearcher = (() => {
       tables: true,               // Enable tables
       tasklists: true,            // Enable task lists
       smartIndentationFix: true,  // Fix weird indentation
-      simpleLineBreaks: true,     // Treat newlines as <br>
+      simpleLineBreaks: false,     // Treat newlines as <br>
       openLinksInNewWindow: true, // Open links in new tab
       parseImgDimensions: true    // Parse image dimensions from markdown
     });
@@ -841,8 +1280,10 @@ const SeresResearcher = (() => {
           }
         } else {
           // For all other report types, always append
-          const reportData = { output: data.output, type: 'report' };
-          writeReport(reportData, converter, false, true); // Use append=true
+          allReports += data.output;
+
+          const reportData = { output: allReports, type: 'report' };
+          writeReport(reportData, converter, false, false); // Use append=true
         }
       } else if (data.type === 'path') {
         updateState('finished')
@@ -914,19 +1355,15 @@ const SeresResearcher = (() => {
 
       console.log(task);
 
-      if (report_type === 'report1') {
-        task = '生成这两个车型:'+task+'的竞品参数对比表格，对比的参数尽可能全面。只生成表格，禁止输出其他内容。';
+      if (report_type === 'custom_report1') {
+        task = '1.生成这两个车型:'+task+'的竞品车型参数对比表格，如同一车型有不同版本需区分，最多展示两个版本，优先展示最新发布的版本。不要在表格中添加引用来源 2.根据参数对比表格进行对比分析 3.得出竞品对比结论。';
         report_type = 'custom_report';
       }
 
-      if (report_type === 'report2') {
-        task = '生成对该车型:'+ task +'的舆情分析报告，需要包含网络舆情评价及来源（使用APA格式引用：[url website](url)）、正负观点占比分析等内容，尽量全面。';
+      if (report_type === 'custom_report2') {
+        task = '生成对该车型:'+ task +'的舆情分析，仅输出正负面评价的对比、对舆情评价的分析和结论。';
         report_type = 'custom_report';
       }
-
-      
-
-
 
       console.log(task);
 
@@ -949,8 +1386,6 @@ const SeresResearcher = (() => {
           .filter((domain) => domain.length > 0);
       }
 
-      
-
       const requestData = {
         task: task,
         report_type: report_type,
@@ -960,10 +1395,6 @@ const SeresResearcher = (() => {
         agent: agent,
         query_domains: query_domains,
       }
-      console.log()
-      
-
-      
 
       // Store the request data for potential reconnection
       lastRequestData = requestData;
@@ -1018,6 +1449,7 @@ const SeresResearcher = (() => {
 
     // Convert markdown to HTML
     const markdownOutput = converter.makeHtml(data.output);
+
 
     // If this is the final report or we should append
     if (isFinal) {
